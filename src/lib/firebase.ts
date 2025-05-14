@@ -2,30 +2,19 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 
-// Check for essential environment variables and throw an error if any are missing.
-if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
-  throw new Error('Firebase config error: NEXT_PUBLIC_FIREBASE_API_KEY is not defined. Please set it in your .env.local file and restart the server.');
-}
-if (!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN) {
-  throw new Error('Firebase config error: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN is not defined. Please set it in your .env.local file and restart the server.');
-}
-if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
-  throw new Error('Firebase config error: NEXT_PUBLIC_FIREBASE_PROJECT_ID is not defined. Please set it in your .env.local file and restart the server.');
-}
-// Add checks for other required variables if necessary, e.g., APP_ID, SENDER_ID if your app strictly depends on them from the start.
-
+// Your web app's Firebase configuration (directly provided)
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID, // Optional
+  apiKey: "AIzaSyDH6iVSenNbWEgNe3-Vd3ddLCKpC77xpR4",
+  authDomain: "profile-forge-ysnoa.firebaseapp.com",
+  projectId: "profile-forge-ysnoa",
+  storageBucket: "profile-forge-ysnoa.firebasestorage.app", // Corrected from your .env.local example which had .firebasestorage.app, common mistake is projectid.appspot.com
+  messagingSenderId: "1016847199408",
+  appId: "1:1016847199408:web:10347fc590a00f49d31f75"
+  // measurementId is optional, so it's fine if not present
 };
 
 // Log the configuration object that will be used to initialize Firebase
-console.log("Firebase Config being used for initialization:", firebaseConfig);
+// console.log("Firebase Config being used for initialization:", firebaseConfig); // Kept for your verification, can be removed later
 
 let app: FirebaseApp;
 let auth: Auth;
