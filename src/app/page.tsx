@@ -17,7 +17,6 @@ export default function HomePage() {
           The ultimate NLP competition platform. Submit your code, process Face2Profile data, and climb the leaderboard!
         </p>
       </header>
-
       <div className="flex flex-col sm:flex-row gap-4">
         <Button asChild size="lg" className="shadow-lg hover:shadow-xl transition-shadow">
           <Link href="/leaderboard">

@@ -117,7 +117,7 @@ export function Navbar() {
                 href={link.href}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-lg font-medium transition-colors hover:text-primary",
-                  pathname === link.href ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-accent/50"
+                  clientLoaded && pathname === link.href ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-accent/50"
                 )}
               >
                 <link.icon className="h-5 w-5" />
@@ -147,7 +147,7 @@ export function Navbar() {
               href={link.href}
               className={cn(
                 "transition-colors hover:text-primary",
-                pathname === link.href ? "text-primary font-semibold" : "text-muted-foreground"
+                clientLoaded && pathname === link.href ? "text-primary font-semibold" : "text-muted-foreground"
               )}
             >
               {link.label}
