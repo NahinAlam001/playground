@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth.tsx';
 import { Logo } from '@/components/core/logo';
 import { Menu, LogOut, UserCircle, LayoutDashboard, UploadCloud, Trophy, History, Loader2, UserPlus, LogIn } from 'lucide-react';
 
