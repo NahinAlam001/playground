@@ -1,0 +1,20 @@
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-selfcheck.json
+*.egg-info/
+dist/
+build/
+
+# Uploads directory for submitted files
+uploads/
+
+# Log files
+*.log
+*.log.*

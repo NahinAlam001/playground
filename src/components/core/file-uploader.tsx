@@ -7,7 +7,7 @@ import { UploadCloud, FileText, XCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface FileUploaderProps {
-  onFileSelect: (file: File) => void;
+  onFileSelect: (file: File) => Promise<void>; // Expects a promise
   acceptedFileTypes?: string[]; // e.g. ['.zip', '.tar.gz']
   maxFileSize?: number; // in bytes
 }
@@ -75,20 +75,24 @@ export function FileUploader({
     if (event.dataTransfer.files && event.dataTransfer.files[0]) {
       validateAndSetFile(event.dataTransfer.files[0]);
     }
-  }, [acceptedFileTypes, maxFileSize]);
+  }, [acceptedFileTypes, maxFileSize, validateAndSetFile]); // Added validateAndSetFile to deps
 
   const handleSubmit = async () => {
     if (selectedFile) {
       setIsSubmitting(true);
-      // Simulate submission
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      onFileSelect(selectedFile);
-      toast({
-        title: "Submission Started",
-        description: `${selectedFile.name} is being processed.`,
-      });
-      setSelectedFile(null); // Clear file after successful "submission"
-      setIsSubmitting(false);
+      try {
+        await onFileSelect(selectedFile); // Calls the async function from props
+        // Success toast and navigation are handled by the onFileSelect implementation in SubmitPage
+        setSelectedFile(null); // Clear file after successful "submission process initiation"
+        const fileInput = document.getElementById('file-upload-input') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
+      } catch (error) {
+        // Error is already toasted by `onFileSelect`'s implementation.
+        // FileUploader just needs to stop its loading spinner.
+        console.error("Submission process failed, error caught by FileUploader:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
     } else {
        toast({
         title: "No File Selected",
@@ -100,7 +104,6 @@ export function FileUploader({
 
   const removeFile = () => {
     setSelectedFile(null);
-    // Reset file input if needed
     const fileInput = document.getElementById('file-upload-input') as HTMLInputElement;
     if (fileInput) fileInput.value = '';
   };
