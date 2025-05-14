@@ -8,14 +8,24 @@ import { Terminal, FileArchive, FileCode2, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Submission } from "@/types";
 import { useRouter } from "next/navigation";
-// import { useAuth } from "@/hooks/use-auth"; // To get real user ID later
+import { useAuth } from "@/hooks/use-auth"; 
 
 export default function SubmitPage() {
   const { toast } = useToast();
   const router = useRouter();
-  // const { user } = useAuth(); // Uncomment when ready to use real user data
+  const { user } = useAuth(); 
 
   const handleFileSubmit = async (file: File): Promise<void> => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to submit.",
+        variant: "destructive",
+      });
+      router.push('/auth/login');
+      throw new Error("User not authenticated");
+    }
+
     const formData = new FormData();
     formData.append("file", file);
 
@@ -25,6 +35,8 @@ export default function SubmitPage() {
       const response = await fetch(`${apiBaseUrl}/submit`, {
         method: 'POST',
         body: formData,
+        // You might need to pass the user's auth token to the backend in the future
+        // headers: { 'Authorization': `Bearer ${await user.getIdToken()}` } 
       });
 
       const result = await response.json();
@@ -41,19 +53,18 @@ export default function SubmitPage() {
       
       const newSubmission: Submission = {
         id: result.submissionId,
-        // userId: user?.uid || 'mock-user-id', // TODO: Replace with actual user ID
-        // userName: user?.displayName || 'Mock User', // TODO: Replace with actual user name
-        userId: 'mock-user-id', // Keeping mock for now
-        userName: 'Mock User',   // Keeping mock for now
+        userId: user.uid, 
+        userName: user.displayName || user.email || 'User',
         fileName: result.fileName,
         submittedAt: new Date().toISOString(),
-        status: 'Processing', // Initial status, backend will update this later via DB
+        status: 'Processing', 
       };
       
       if(typeof window !== "undefined") {
         let submissions: Submission[] = JSON.parse(localStorage.getItem('mockSubmissions') || '[]');
-        submissions = submissions.filter(s => s.id !== newSubmission.id); // Avoid duplicates
-        localStorage.setItem('mockSubmissions', JSON.stringify([newSubmission, ...submissions]));
+        // Filter out any potential duplicate by ID before adding the new one
+        submissions = submissions.filter(s => s.id !== newSubmission.id);
+        localStorage.setItem('mockSubmissions', JSON.stringify([newSubmission, ...submissions].sort((a,b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())));
       }
 
       toast({
@@ -65,15 +76,14 @@ export default function SubmitPage() {
 
     } catch (error: any) {
       console.error("File submission failed:", error);
-      // Toast if it's a network error or an error not already toasted from response.ok check
-      if (!error.message.startsWith("Server error:") && !(error.message.includes("Upload failed"))) {
+      if (!error.message.startsWith("Server error:") && !(error.message.includes("Upload failed")) && error.message !== "User not authenticated") {
           toast({
             title: "Submission Failed",
             description: error.message || "A network error occurred or the server is unreachable. Please try again.",
             variant: "destructive",
           });
       }
-      throw error; // Re-throw to allow FileUploader to handle its state
+      throw error; 
     }
   };
 

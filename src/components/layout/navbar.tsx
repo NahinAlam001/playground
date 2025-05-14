@@ -15,12 +15,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/use-auth.tsx';
+import { useAuth } from '@/hooks/use-auth';
 import { Logo } from '@/components/core/logo';
 import { Menu, LogOut, UserCircle, LayoutDashboard, UploadCloud, Trophy, History, Loader2, UserPlus, LogIn } from 'lucide-react';
 
 const navLinks = [
-  { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+  { href: '/leaderboard', label: 'Leaderboard', icon: Trophy, protected: false }, // Leaderboard is public
   { href: '/submit', label: 'Submit Code', icon: UploadCloud, protected: true },
   { href: '/submissions', label: 'My Submissions', icon: History, protected: true },
 ];
@@ -30,6 +30,8 @@ export function Navbar() {
   const { user, logout, loading } = useAuth();
   const router = useRouter();
   const [clientLoaded, setClientLoaded] = useState(false);
+  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+
 
   useEffect(() => {
     setClientLoaded(true);
@@ -39,6 +41,8 @@ export function Navbar() {
     await logout();
     router.push('/');
   };
+  
+  const closeMobileSheet = () => setIsMobileSheetOpen(false);
 
   const renderUserActions = () => {
     if (!clientLoaded || loading) {
@@ -51,16 +55,16 @@ export function Navbar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10 border-2 border-primary hover:border-accent transition-colors">
-                <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} data-ai-hint="user avatar" />
-                <AvatarFallback>{user.displayName?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+                <AvatarImage src={user.photoURL || `https://placehold.co/40x40.png?text=${(user.displayName || user.email || "U")[0].toUpperCase()}`} alt={user.displayName || 'User'} data-ai-hint="user avatar" />
+                <AvatarFallback>{(user.displayName || user.email || "U")[0].toUpperCase()}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user.displayName || "User Profile"}</p>
-                <p className="text-xs leading-none text-muted-foreground">
+                <p className="text-sm font-medium leading-none truncate">{user.displayName || "User Profile"}</p>
+                <p className="text-xs leading-none text-muted-foreground truncate">
                   {user.email}
                 </p>
               </div>
@@ -97,27 +101,37 @@ export function Navbar() {
   };
   
   const MobileNav = () => (
-    <Sheet>
+    <Sheet open={isMobileSheetOpen} onOpenChange={setIsMobileSheetOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="md:hidden">
           <Menu className="h-6 w-6" />
           <span className="sr-only">Toggle Menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-full max-w-xs bg-card">
-        <div className="p-4">
+      <SheetContent side="left" className="w-full max-w-xs bg-card p-0">
+        <div className="p-4 border-b">
           <Logo size="md" />
         </div>
-        <nav className="flex flex-col gap-2 p-4">
+        <nav className="flex flex-col gap-1 p-4">
           {navLinks.map((link) => {
-            if (link.protected && !user && clientLoaded) return null;
+            if (link.protected && !user && clientLoaded && !loading) return null;
+            if (link.protected && loading && !user) { // Still loading, don't show protected links yet
+                 return ( // Optional: show a placeholder or nothing
+                    <div key={`${link.href}-loader`} className="flex items-center gap-3 rounded-lg px-3 py-2 text-lg font-medium text-muted-foreground/50">
+                        <link.icon className="h-5 w-5" />
+                        <span>{link.label}</span>
+                        <Loader2 className="h-4 w-4 animate-spin ml-auto" />
+                    </div>
+                );
+            }
             return (
               <Link
                 key={link.href}
                 href={link.href}
+                onClick={closeMobileSheet}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-lg font-medium transition-colors hover:text-primary",
-                  clientLoaded && pathname === link.href ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-accent/50"
+                  "flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-colors hover:text-primary hover:bg-accent/10",
+                  clientLoaded && pathname === link.href ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted/50"
                 )}
               >
                 <link.icon className="h-5 w-5" />
@@ -134,13 +148,16 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4"> {/* Adjusted gap for mobile */}
          <MobileNav />
-          <Logo />
+          <div className={cn(isMobileSheetOpen && "opacity-0", "transition-opacity duration-300")}> {/* Hide logo when sheet is open for cleaner look if needed, or remove this cn */}
+            <Logo />
+          </div>
         </div>
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
           {navLinks.map((link) => {
-             if (link.protected && !user && clientLoaded) return null;
+             if (link.protected && !user && clientLoaded && !loading) return null;
+             if (link.protected && loading && !user) return null; // Don't show protected links while loading and no user
             return (
             <Link
               key={link.href}

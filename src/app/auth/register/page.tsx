@@ -13,7 +13,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+// Toast is handled by useAuth now
+// import { useToast } from "@/hooks/use-toast"; 
 
 const registerSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -29,7 +30,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function RegisterPage() {
   const router = useRouter();
   const { register } = useAuth();
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Toast is handled by useAuth now
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<RegisterFormValues>({
@@ -45,11 +46,11 @@ export default function RegisterPage() {
     setIsLoading(true);
     try {
       await register(data.email, data.password);
-      toast({ title: "Registration Successful", description: "Welcome to Profile Forge!" });
-      router.push("/submit");
+      // Toast is handled by useAuth
+      router.push("/submit"); // Or to a welcome/profile page
     } catch (error) {
-      console.error("Registration failed", error);
-      toast({ title: "Registration Failed", description: "Could not create your account.", variant: "destructive" });
+      // Error is handled by useAuth hook
+      console.error("Registration submission failed on page", error);
     } finally {
       setIsLoading(false);
     }
@@ -132,4 +133,3 @@ export default function RegisterPage() {
     </Card>
   );
 }
-

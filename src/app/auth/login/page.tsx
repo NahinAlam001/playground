@@ -13,11 +13,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+// Toast is handled by useAuth now
+// import { useToast } from "@/hooks/use-toast";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  password: z.string().min(1, { message: "Password is required." }), // Min 1 for presence check, Firebase handles length
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -25,7 +26,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Toast is handled by useAuth now
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<LoginFormValues>({
@@ -40,11 +41,11 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await login('email', data.email, data.password);
-      toast({ title: "Login Successful", description: "Welcome back!" });
+      // Toast is handled by useAuth
       router.push("/submit"); 
     } catch (error) {
-      console.error("Login failed", error);
-      toast({ title: "Login Failed", description: "Invalid email or password.", variant: "destructive" });
+      // Error is handled by useAuth hook
+      console.error("Login submission failed on page", error);
     } finally {
       setIsLoading(false);
     }
