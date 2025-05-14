@@ -24,6 +24,9 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID, // Optional
 };
 
+// Log the configuration object that will be used to initialize Firebase
+console.log("Firebase Config being used for initialization:", firebaseConfig);
+
 let app: FirebaseApp;
 let auth: Auth;
 
