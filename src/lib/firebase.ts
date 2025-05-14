@@ -1,7 +1,18 @@
 
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
-// Add other Firebase services as needed, e.g., getFirestore, getStorage
+
+// Check for essential environment variables and throw an error if any are missing.
+if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+  throw new Error('Firebase config error: NEXT_PUBLIC_FIREBASE_API_KEY is not defined. Please set it in your .env.local file and restart the server.');
+}
+if (!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN) {
+  throw new Error('Firebase config error: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN is not defined. Please set it in your .env.local file and restart the server.');
+}
+if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+  throw new Error('Firebase config error: NEXT_PUBLIC_FIREBASE_PROJECT_ID is not defined. Please set it in your .env.local file and restart the server.');
+}
+// Add checks for other required variables if necessary, e.g., APP_ID, SENDER_ID if your app strictly depends on them from the start.
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -16,6 +27,7 @@ const firebaseConfig = {
 let app: FirebaseApp;
 let auth: Auth;
 
+// Initialize Firebase
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
 } else {
