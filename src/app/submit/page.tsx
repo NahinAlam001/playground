@@ -16,18 +16,21 @@ export default function SubmitPage() {
   const { user } = useAuth(); 
 
   const handleFileSubmit = async (file: File): Promise<void> => {
-    if (!user) {
+    if (!user || !user.uid) { // Check for user and user.uid
       toast({
         title: "Authentication Required",
         description: "You must be logged in to submit.",
         variant: "destructive",
       });
       router.push('/auth/login');
-      throw new Error("User not authenticated");
+      throw new Error("User not authenticated or user ID missing");
     }
 
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("userId", user.uid);
+    formData.append("userName", user.displayName || user.email || "Anonymous User");
+
 
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
@@ -35,8 +38,7 @@ export default function SubmitPage() {
       const response = await fetch(`${apiBaseUrl}/submit`, {
         method: 'POST',
         body: formData,
-        // You might need to pass the user's auth token to the backend in the future
-        // headers: { 'Authorization': `Bearer ${await user.getIdToken()}` } 
+        // Headers for FormData are set automatically by the browser, including Content-Type: multipart/form-data
       });
 
       const result = await response.json();
@@ -51,18 +53,19 @@ export default function SubmitPage() {
         throw new Error(message);
       }
       
+      // Create a submission object to store temporarily in localStorage for the redirect.
+      // The single source of truth will be Firestore.
       const newSubmission: Submission = {
         id: result.submissionId,
         userId: user.uid, 
-        userName: user.displayName || user.email || 'User',
+        userName: user.displayName || user.email || 'User', // Use consistent naming
         fileName: result.fileName,
-        submittedAt: new Date().toISOString(),
-        status: 'Processing', 
+        submittedAt: result.submittedAt || new Date().toISOString(), // Use timestamp from backend if available
+        status: 'Processing', // Initial status after successful POST
       };
       
       if(typeof window !== "undefined") {
         let submissions: Submission[] = JSON.parse(localStorage.getItem('mockSubmissions') || '[]');
-        // Filter out any potential duplicate by ID before adding the new one
         submissions = submissions.filter(s => s.id !== newSubmission.id);
         localStorage.setItem('mockSubmissions', JSON.stringify([newSubmission, ...submissions].sort((a,b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())));
       }
@@ -76,14 +79,24 @@ export default function SubmitPage() {
 
     } catch (error: any) {
       console.error("File submission failed:", error);
-      if (!error.message.startsWith("Server error:") && !(error.message.includes("Upload failed")) && error.message !== "User not authenticated") {
+      // Avoid duplicate toasts if error is already specific
+      if (!(error.message.startsWith("Server error:") || 
+            error.message.includes("Upload failed") || 
+            error.message === "User not authenticated or user ID missing" ||
+            error.message.includes("Failed to fetch"))) {
           toast({
-            title: "Submission Failed",
-            description: error.message || "A network error occurred or the server is unreachable. Please try again.",
+            title: "Submission Processing Error",
+            description: error.message || "An unexpected error occurred. Please try again.",
+            variant: "destructive",
+          });
+      } else if (error.message.includes("Failed to fetch")) {
+         toast({
+            title: "Network Error",
+            description: "Could not connect to the backend server. Please ensure it's running and try again.",
             variant: "destructive",
           });
       }
-      throw error; 
+      throw error; // Re-throw to allow FileUploader to reset its state
     }
   };
 

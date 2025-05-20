@@ -2,10 +2,27 @@
 import shutil
 import uuid
 from pathlib import Path
+import datetime # Import datetime
 
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+# Initialize Firebase Admin SDK
+# IMPORTANT: Set the GOOGLE_APPLICATION_CREDENTIALS environment variable
+# to the path of your Firebase service account key JSON file.
+try:
+    cred = credentials.ApplicationDefault()
+    firebase_admin.initialize_app(cred)
+except Exception as e:
+    print(f"Error initializing Firebase Admin SDK: {e}")
+    print("Ensure GOOGLE_APPLICATION_CREDENTIALS environment variable is set correctly.")
+    # Allow app to run for now, but Firestore operations will fail
+    # In a production app, you might want to exit or handle this more strictly
+
+db = firestore.client()
 
 app = FastAPI(title="Profile Forge Backend")
 
@@ -22,9 +39,14 @@ UPLOADS_DIR = Path("uploads")
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 @app.post("/submit", tags=["Submissions"])
-async def submit_code(file: UploadFile = File(...)):
+async def submit_code(
+    file: UploadFile = File(...),
+    userId: str = Form(...),
+    userName: str = Form(...)
+):
     """
-    Accepts a code submission file, saves it, and returns a submission ID.
+    Accepts a code submission file and user details, saves the file,
+    and records submission metadata in Firestore.
     """
     try:
         submission_id = str(uuid.uuid4())
@@ -36,15 +58,40 @@ async def submit_code(file: UploadFile = File(...)):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # In a real application, this is where you'd:
-        # 1. Store submission details (submission_id, user_id, file_path, status='Pending') in a database.
-        # 2. Add the submission to a queue for processing (e.g., Docker execution & evaluation).
-        # For this step, we just confirm receipt and provide an ID.
+        submission_timestamp = datetime.datetime.utcnow().isoformat() + "Z" # ISO 8601 format
+
+        submission_data = {
+            "id": submission_id,
+            "userId": userId,
+            "userName": userName,
+            "fileName": file.filename, # Original filename
+            "filePath": str(file_path), # Path on server
+            "submittedAt": submission_timestamp,
+            "status": "Pending", # Initial status
+            # Scores and logs will be added later
+            "bleu4Score": None,
+            "customBleuScore": None,
+            "entityCoverageScore": None,
+            "evaluationSummary": None,
+            "logs": None
+        }
+
+        # Store submission metadata in Firestore
+        if db:
+            doc_ref = db.collection("submissions").document(submission_id)
+            doc_ref.set(submission_data)
+        else:
+            # Fallback if Firebase Admin SDK failed to initialize
+            print("Firestore client not available. Submission metadata not saved to Firestore.")
+            # You might want to return an error or handle this case differently
+
         return {
             "message": "File submitted successfully and is pending processing.",
             "submissionId": submission_id,
             "fileName": file.filename,
-            # "filePath": str(file_path) # Useful for debugging, consider removing for production
+            "submittedAt": submission_timestamp,
+            "status": "Pending"
+            # Return relevant data for the frontend
         }
     except Exception as e:
         # Log the exception e for server-side debugging
@@ -60,6 +107,4 @@ async def read_root():
     return {"message": "Welcome to the Profile Forge Backend API"}
 
 if __name__ == "__main__":
-    # This is for direct execution (e.g., `python main.py`)
-    # For development, prefer `uvicorn backend.main:app --reload --port 8000`
     uvicorn.run(app, host="0.0.0.0", port=8000)
